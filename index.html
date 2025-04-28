@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reloj de Actividades para Niños</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="rainbow-clock">
+            <div class="clock-stack">
+                <svg class="rainbow-bg" width="340" height="340" viewBox="0 0 340 340">
+                    <!-- Segmentos de color para cada hora -->
+                    <g id="segments"></g>
+                </svg>
+                <div class="clock-face">
+                    <div class="hand hour-hand"></div>
+                    <div class="hand minute-hand"></div>
+                    <div class="hand second-hand"></div>
+                    <!-- Números grandes y pequeños -->
+                    <div class="numbers">
+                        <!-- Los números se insertarán por JS -->
+                    </div>
+                    <!-- Huecos para imágenes de actividades -->
+                    <div class="activity-images">
+                        <!-- Las imágenes se insertarán por JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="activities-block">
+            <button class="settings-btn" id="settings-btn" title="Configurar actividades">⚙️ Configurar actividades</button>
+            <div class="digital-time" id="digital-time"></div>
+            <div class="date" id="date">Lunes, 1 de Enero</div>
+            <div class="activities">
+                <div class="activity" id="current-activity">
+                    <h2>Actividad Actual</h2>
+                    <p>Desayunar</p>
+                </div>
+                <div class="activity" id="next-activity">
+                    <h2>Próxima Actividad</h2>
+                    <p>Ir al colegio</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de configuración -->
+    <div class="modal-bg" id="modal-bg">
+        <div class="modal-settings">
+            <h2>Configura las actividades por hora</h2>
+            <form id="settings-form">
+                <div class="settings-list" id="settings-list">
+                    <!-- Aquí se insertan los inputs por JS -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="close-settings">Cancelar</button>
+                    <button type="submit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

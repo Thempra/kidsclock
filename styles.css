@@ -1,0 +1,363 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Comic Neue', cursive;
+    /* Fondo metálico */
+    background: linear-gradient(135deg, #bfc0c0 0%, #e6e7e8 40%, #a7a8aa 100%);
+    min-height: 100vh;
+    min-width: 100vw;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #333;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    gap: 5vw;
+    background-color: rgba(255,255,255,0.0);
+}
+
+.rainbow-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.clock-stack {
+    position: relative;
+    width: 340px;
+    height: 340px;
+}
+
+.rainbow-bg,
+.clock-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 340px;
+    height: 340px;
+    pointer-events: none;
+}
+
+.clock-face {
+    pointer-events: auto;
+    z-index: 2;
+}
+
+.hand {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: 0% 50%;
+    transition: transform 0.5s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+    z-index: 10;
+}
+
+.hour-hand {
+    height: 8px;
+    width: 80px;
+    background: #ff6b6b;
+    margin-top: -4px;
+}
+
+.minute-hand {
+    height: 6px;
+    width: 120px;
+    background: #333;
+    margin-top: -3px;
+}
+
+.second-hand {
+    height: 3px;
+    width: 140px;
+    background: #ff9a9e;
+    margin-top: -1.5px;
+}
+
+.numbers {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    z-index: 20;
+}
+
+.numbers .number {
+    position: absolute;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    text-shadow: 1px 1px 4px #fff;
+}
+.numbers .number-small {
+    font-size: 1rem;
+    color: #888;
+    font-weight: normal;
+}
+
+.activity-images {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    z-index: 30;
+    pointer-events: none;
+}
+
+.activity-images .activity-img {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    border: 3px solid #fff;
+    pointer-events: auto;
+    transition: transform 0.2s;
+}
+.activity-images .activity-img.active {
+    border-color: #ff6b6b;
+    transform: scale(1.15);
+    z-index: 40;
+}
+
+.activities-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2rem;
+    min-width: 320px;
+}
+
+.activities {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 100%;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.activity {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    min-width: 220px;
+    max-width: 350px;
+    margin: 0 auto;
+    transition: transform 0.3s ease;
+}
+
+.activity:hover {
+    transform: scale(1.05);
+}
+
+.activity h2 {
+    color: #ff6b6b;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.activity p {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.digital-time {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #222;
+    margin: 0.5rem 0 0.5rem 0;
+    letter-spacing: 0.1em;
+    text-shadow: 1px 1px 4px #fff, 0 0 8px #bbb;
+    text-align: center;
+}
+
+.date {
+    font-size: 1.5rem;
+    color: #666;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .container {
+        flex-direction: column;
+        gap: 2vw;
+    }
+    .activities-block {
+        min-width: 220px;
+    }
+    .rainbow-clock {
+        max-width: 90vw;
+        max-height: 50vw;
+    }
+    .activities {
+        flex-direction: row;
+        max-width: 90vw;
+        min-width: unset;
+        align-items: flex-start;
+        justify-content: center;
+    }
+    .activity {
+        width: auto;
+        min-width: 150px;
+    }
+    .clock-stack, .rainbow-bg, .clock-face {
+        width: 220px !important;
+        height: 220px !important;
+    }
+    .hand.hour-hand { width: 50px !important; height: 5px !important; margin-top: -2.5px; }
+    .hand.minute-hand { width: 70px !important; height: 3px !important; margin-top: -1.5px; }
+    .hand.second-hand { width: 90px !important; height: 2px !important; margin-top: -1px; }
+    .activity-images .activity-img { width: 24px; height: 24px; font-size: 0.9rem; }
+    .numbers .number { font-size: 0.9rem; }
+}
+
+@media (max-width: 600px) {
+    .rainbow-clock {
+        min-width: 220px;
+        min-height: 220px;
+    }
+    .clock-stack, .rainbow-bg, .clock-face {
+        width: 200px !important;
+        height: 200px !important;
+    }
+    .hand.hour-hand { width: 45px !important; height: 5px !important; margin-top: -2.5px; }
+    .hand.minute-hand { width: 70px !important; height: 3px !important; margin-top: -1.5px; }
+    .hand.second-hand { width: 90px !important; height: 2px !important; margin-top: -1px; }
+    .activity-images .activity-img { width: 24px; height: 24px; font-size: 0.9rem; }
+    .numbers .number { font-size: 0.9rem; }
+}
+
+.settings-btn {
+    background: #fff;
+    border: 2px solid #ff6b6b;
+    color: #ff6b6b;
+    font-size: 1.3rem;
+    border-radius: 10px;
+    padding: 0.5rem 1.2rem;
+    margin-bottom: 1.2rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.settings-btn:hover {
+    background: #ff6b6b;
+    color: #fff;
+    border-color: #ff6b6b;
+}
+
+.modal-bg {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.35);
+    justify-content: center;
+    align-items: center;
+}
+.modal-bg.active {
+    display: flex;
+}
+.modal-settings {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 2rem 2.5rem;
+    min-width: 340px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.settings-list {
+    width: 100%;
+    margin: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+}
+.settings-row label {
+    width: 2.5rem;
+    text-align: right;
+    font-weight: bold;
+    color: #ff6b6b;
+}
+.settings-row input[type="text"] {
+    width: 2.5rem;
+    font-size: 1.3rem;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 0.2rem 0.3rem;
+}
+.settings-row input.activity-label {
+    width: 60%;
+    min-width: 80px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    padding: 0.2rem 0.5rem;
+}
+.modal-actions {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+.modal-actions button {
+    font-size: 1.1rem;
+    border-radius: 8px;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    background: #ff6b6b;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.modal-actions button[type="button"] {
+    background: #bbb;
+    color: #fff;
+}
+.modal-actions button:hover {
+    background: #e53935;
+}
+.modal-actions button[type="button"]:hover {
+    background: #888;
+} 

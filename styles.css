@@ -88,6 +88,7 @@ body {
     width: 140px;
     background: #ff9a9e;
     margin-top: -1.5px;
+    transition: none;
 }
 
 .numbers {

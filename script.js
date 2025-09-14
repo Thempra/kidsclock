@@ -14,20 +14,21 @@ const segmentColors = [
     '#607d8b'  // gris azulado
 ];
 
-// Actividades y emojis (puedes cambiar los emojis por imágenes SVG/PNG si lo deseas)
+// Actividades y emojis - Horario de 24 horas para un niño
+// Cada actividad corresponde a 2 horas del día (12 segmentos x 2 horas = 24 horas)
 const activities = [
-    { emoji: '🎨', label: 'Pintar' },
-    { emoji: '🍽️', label: 'Desayuno' },
-    { emoji: '🚶‍♂️', label: 'Ir al cole' },
-    { emoji: '📚', label: 'Estudiar' },
-    { emoji: '🍽️', label: 'Comida' },
-    { emoji: '⚽', label: 'Jugar' },
-    { emoji: '🚲', label: 'Bici' },
-    { emoji: '🛁', label: 'Baño' },
-    { emoji: '🍽️', label: 'Cena' },
-    { emoji: '📺', label: 'TV' },
-    { emoji: '🛏️', label: 'Dormir' },
-    { emoji: '🎵', label: 'Música' }
+    { emoji: '🌙', label: 'Sueño profundo', hours: [0, 1] },     // 00:00-01:59
+    { emoji: '🛏️', label: 'Dormir', hours: [2, 3] },             // 02:00-03:59
+    { emoji: '🛏️', label: 'Dormir', hours: [4, 5] },             // 04:00-05:59
+    { emoji: '🛏️', label: 'Dormir', hours: [6, 7] },             // 06:00-07:59
+    { emoji: '🌅', label: 'Despertar', hours: [8, 9] },           // 08:00-09:59
+    { emoji: '🚶‍♂️', label: 'Ir al cole', hours: [10, 11] },      // 10:00-11:59
+    { emoji: '📚', label: 'Clases', hours: [12, 13] },            // 12:00-13:59
+    { emoji: '🍽️', label: 'Comer', hours: [14, 15] },            // 14:00-15:59
+    { emoji: '⚽', label: 'Jugar', hours: [16, 17] },             // 16:00-17:59
+    { emoji: '📖', label: 'Deberes', hours: [18, 19] },           // 18:00-19:59
+    { emoji: '🍽️', label: 'Cena', hours: [20, 21] },             // 20:00-21:59
+    { emoji: '🛁', label: 'Ducha', hours: [22, 23] }              // 22:00-23:59
 ];
 
 // Dibuja los segmentos radiales completos (tipo tarta)
@@ -144,16 +145,37 @@ function updateClock() {
 }
 
 function updateActivities(hours) {
-    let idx = hours % 12;
+    // Encontrar la actividad correspondiente a la hora actual (0-23)
+    let currentActivityIndex = -1;
+    for (let i = 0; i < activities.length; i++) {
+        if (activities[i].hours.includes(hours)) {
+            currentActivityIndex = i;
+            break;
+        }
+    }
+    
+    // Si no se encuentra una actividad específica, usar la más cercana
+    if (currentActivityIndex === -1) {
+        currentActivityIndex = Math.floor(hours / 2) % 12;
+    }
+    
     // Quitar highlight a todas
     document.querySelectorAll('.activity-img').forEach(e => e.classList.remove('active'));
     // Poner highlight a la actual
-    document.querySelectorAll('.activity-img')[idx].classList.add('active');
+    document.querySelectorAll('.activity-img')[currentActivityIndex].classList.add('active');
+    
     // Mostrar actividad actual y próxima
-    const current = activities[idx];
-    const next = activities[(idx + 1) % 12];
-    document.getElementById('current-activity').querySelector('p').textContent = `${current.emoji} ${current.label}`;
-    document.getElementById('next-activity').querySelector('p').textContent = `${next.emoji} ${next.label}`;
+    const current = activities[currentActivityIndex];
+    const next = activities[(currentActivityIndex + 1) % 12];
+    
+    // Mostrar AM/PM en la actividad
+    const period = hours < 12 ? 'AM' : 'PM';
+    const displayHour = hours === 0 ? 12 : (hours > 12 ? hours - 12 : hours);
+    
+    document.getElementById('current-activity').querySelector('p').textContent = 
+        `${current.emoji} ${current.label} (${displayHour}:00 ${period})`;
+    document.getElementById('next-activity').querySelector('p').textContent = 
+        `${next.emoji} ${next.label}`;
 }
 
 setInterval(updateClock, 1000);
@@ -177,10 +199,14 @@ function openSettings() {
     // Rellenar el listado de inputs
     settingsList.innerHTML = '';
     for (let i = 0; i < 12; i++) {
+        const startHour = activities[i].hours[0];
+        const endHour = activities[i].hours[1];
+        const timeRange = `${startHour.toString().padStart(2, '0')}:00-${(endHour + 1).toString().padStart(2, '0')}:00`;
+        
         const row = document.createElement('div');
         row.className = 'settings-row';
         row.innerHTML = `
-            <label>${i + 1}</label>
+            <label>${timeRange}</label>
             <input type="text" maxlength="2" class="activity-emoji" value="${activities[i].emoji}" title="Emoji" />
             <input type="text" class="activity-label" value="${activities[i].label}" title="Nombre de la actividad" />
         `;
@@ -207,6 +233,8 @@ settingsForm.addEventListener('submit', function(e) {
     for (let i = 0; i < 12; i++) {
         activities[i].emoji = emojiInputs[i].value || '❓';
         activities[i].label = labelInputs[i].value || 'Sin actividad';
+        // Mantener las horas originales
+        // activities[i].hours se mantiene igual
     }
     // Redibujar imágenes y actualizar reloj
     drawActivityImages();

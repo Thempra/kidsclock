@@ -34,7 +34,10 @@ const activities = [
 function drawSegments() {
     const svg = document.getElementById('segments');
     svg.innerHTML = '';
-    const cx = 170, cy = 170, r = 155; // pastel más pequeño, margen
+    // Obtener el tamaño actual del reloj
+    const clockStack = document.querySelector('.clock-stack');
+    const size = Math.min(clockStack.offsetWidth, clockStack.offsetHeight);
+    const cx = size / 2, cy = size / 2, r = (size * 0.46); // pastel más pequeño, margen
     for (let i = 0; i < 12; i++) {
         const startAngle = (i - 3) * 30 * Math.PI / 180;
         const endAngle = (i - 2) * 30 * Math.PI / 180;
@@ -56,15 +59,19 @@ drawSegments();
 function drawNumbers() {
     const numbersDiv = document.querySelector('.numbers');
     numbersDiv.innerHTML = '';
-    const cx = 170, cy = 170, rBig = 120, rSmall = 95;
+    // Obtener el tamaño actual del reloj
+    const clockStack = document.querySelector('.clock-stack');
+    const size = Math.min(clockStack.offsetWidth, clockStack.offsetHeight);
+    const cx = size / 2, cy = size / 2, rBig = size * 0.35, rSmall = size * 0.28;
     for (let i = 1; i <= 12; i++) {
         const angle = (i - 3) * 30 * Math.PI / 180;
         const x = cx + rBig * Math.cos(angle);
         const y = cy + rBig * Math.sin(angle);
         const num = document.createElement('div');
         num.className = 'number';
-        num.style.left = `${x - 18}px`;
-        num.style.top = `${y - 18}px`;
+        const offset = size * 0.05;
+        num.style.left = `${x - offset}px`;
+        num.style.top = `${y - offset}px`;
         num.textContent = i;
         numbersDiv.appendChild(num);
         // Números pequeños (13-24)
@@ -73,8 +80,9 @@ function drawNumbers() {
         const ySmall = cy + rSmall * Math.sin(smallAngle);
         const numSmall = document.createElement('div');
         numSmall.className = 'number number-small';
-        numSmall.style.left = `${xSmall - 10}px`;
-        numSmall.style.top = `${ySmall - 10}px`;
+        const smallOffset = size * 0.03;
+        numSmall.style.left = `${xSmall - smallOffset}px`;
+        numSmall.style.top = `${ySmall - smallOffset}px`;
         numSmall.textContent = i + 12;
         numbersDiv.appendChild(numSmall);
     }
@@ -85,15 +93,19 @@ drawNumbers();
 function drawActivityImages() {
     const imgsDiv = document.querySelector('.activity-images');
     imgsDiv.innerHTML = '';
-    const cx = 170, cy = 170, r = 200; // fuera del pastel pero dentro del canvas
+    // Obtener el tamaño actual del reloj
+    const clockStack = document.querySelector('.clock-stack');
+    const size = Math.min(clockStack.offsetWidth, clockStack.offsetHeight);
+    const cx = size / 2, cy = size / 2, r = size * 0.58; // fuera del pastel pero dentro del canvas
     for (let i = 0; i < 12; i++) {
         const angle = (i - 3) * 30 * Math.PI / 180;
         const x = cx + r * Math.cos(angle);
         const y = cy + r * Math.sin(angle);
         const img = document.createElement('div');
         img.className = 'activity-img';
-        img.style.left = `${x - 24}px`;
-        img.style.top = `${y - 24}px`;
+        const imgOffset = size * 0.07;
+        img.style.left = `${x - imgOffset}px`;
+        img.style.top = `${y - imgOffset}px`;
         img.title = activities[i].label;
         img.textContent = activities[i].emoji;
         imgsDiv.appendChild(img);
@@ -146,6 +158,13 @@ function updateActivities(hours) {
 
 setInterval(updateClock, 1000);
 updateClock();
+
+// Redibujar elementos cuando cambie el tamaño de la ventana
+window.addEventListener('resize', () => {
+    drawSegments();
+    drawNumbers();
+    drawActivityImages();
+});
 
 // --- SETTINGS MENU LOGIC ---
 const settingsBtn = document.getElementById('settings-btn');

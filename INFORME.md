@@ -391,3 +391,77 @@ exigiría subirlo por encima del kiosco, y eso rompe la pantalla completa tácti
 - `earlyoom` activo como red de seguridad contra el OOM killer.
 - 27 paquetes purgados en la optimización + 3 del kernel 6.1.0-34; 0,9 GB tras
   el upgrade y 0,5 GB tras purgar el kernel viejo.
+
+---
+
+## 8. Audio del altavoz interno — investigación cerrada
+
+El altavoz interno no emite sonido. Códec **Realtek RT5672** (`i2c-1`, dir.
+`0x1c`, ACPI `i2c-10EC5670:00`), tarjeta ALSA `card 1: chtbswrt5672`, driver
+`snd_soc_sst_cht_bsw_rt5672` sobre el DSP Merrifield (`808622A8:00`, firmware
+`intel/fw_sst_22a8.bin`, `01.0b.02.02`). La ruta de altavoz del códec es
+`DAC → Stereo DAC MIX → PDM1 Mux → SPO Amp → SPOLP/SPOLN/SPORP/SPORN`.
+
+### Lo que se descartó con medición
+
+| Hipótesis | Evidencia que la descarta |
+|---|---|
+| DAPM incompleto | Con stream en `RUNNING`: `AIF1 Playback`, `DAC1 MIXL/R`, `Stereo DAC MIXL/R`, `PDM1 L/R Mux`, `PDM1 Power`, `SPO Amp`, `Ext Spk`, `ssp2 Tx` todos **On**; `bias_level: On` |
+| Reloj o MCLK ausente | `0xfa` bit 3 `MCLK_DET` = **1**; `0x80 = 0x4000` (`SCLK_SRC` = PLL1); `0x64` bit 9 `PWR_PLL` = 1 |
+| Pads SSP2 mal muxados | `pinctrl INT33FF:00`: pins 92/94/96/97 (`GP_SSP_2_CLK/RXD/FS/TXD`) en **mode 1** = función nativa |
+| Formato incoherente | `hw_params` real = `S16_LE`, 2 canales, 48 kHz; `0x70 = 0x8008` (esclavo, `I2S_DL=24`); `0x73 = 0x1770` (`BCLK_MS1`=0 ⇒ 32fs) |
+| Alimentación analógica | `0x63 = 0xf83d` durante reproducción: `VREF1/FV1/MB/LM/BG/VREF2/FV2`=1, `LDO`=5. En reposo `0x0023` |
+| Amplificador apagado por GPIO | `0xc1 = 0x0006` (`GP1_OUT_HI`). Forzado a `0x0004` durante 25 s en reproducción y devuelto a `0x0006`: sin cambio audible |
+| Amplificador I2C externo silencioso | `i2cdetect -y -r 1` solo muestra `0x1c` (códec, `UU`) y `0x50` (EEPROM). No hay amplificador externo en el bus |
+| SOF como alternativa | `CONFIG_SND_SOC_SOF_ACPI` **no está compilado** en `/boot/config-6.1.0-54-amd64` |
+
+### Dos errores propios, corregidos
+
+**`PDM1 L Mux` no tiene ningún bug.** El widget declara
+`RT5670_M_PDM1_L_SFT` (bit 14) con `invert=1`. En
+`soc-dapm.c:3331-3353`, el valor que ve userspace es `max - val`, es decir
+`1 - bit14`. Con `0x31 = 0xaf00` (bit14 = 0) el mux vale **1 = Stereo DAC**,
+que es justo lo que DAPM reporta y lo que alimenta `Stereo DAC MIXL` (`On`).
+Conclusión anterior («el chip queda en Mono DAC con la entrada muda») era
+**falsa**: decodifiqué el bit crudo sin aplicar el `invert`. El enum del
+`snd_kcontrol` usa el bit 15 y el widget el bit 14, pero eso no rompe la ruta:
+`0x31` conserva `bit15 = 1` (enable) y `bit14 = 0` (Stereo DAC), el patrón que
+el driver escribe de forma estable en cada apertura del PCM.
+
+**El quirk del altavoz lo pusimos nosotros, no el firmware.** El archivo
+`/etc/modprobe.d/rt5670-speaker.conf` contiene
+`options snd_soc_rt5670 quirk=0x1000`, y la tabla DMI de `rt5670.c` **no incluye
+esta tablet**. Es una suposición heredada, no un dato del fabricante; no
+obstante, `rt5670_spk_event` solo añade `GP1_OUT_HI` en `POST_PMU`, y ese pin ya
+se toggló sin efecto, así que el quirk no explica el silencio.
+
+### Bug real encontrado: `PWR_CLS_D` inalcanzable
+
+`RT5670_PWR_CLS_D` (bit 0 de `0x61`) está definido en `rt5670h.c:708-709` y
+**nunca se usa** en `rt5670.c`. Escribirlo por I2C (`0x61 = 0x9801`) no
+persiste: el chip relee `0x9880`. El amplificador clase D no es conmutable por
+software en este silicio, y `SPO Amp` es
+`SND_SOC_DAPM_PGA_E(… SND_SOC_NOPM …)`, que no escribe registro alguno.
+
+### Límites de la verificación
+
+La única prueba válida del resultado final es auditiva. La captura por
+micrófono **no sirve** en este equipo: `arecord -D hw:1,0` devuelve
+`read error: Error de entrada/salida` y deja solo la cabecera de 44 bytes del
+WAV, con el PCM de captura sin `state`. Por eso la prueba de audio se apoya en
+mediciones de registro y DAPM, no en una grabación.
+
+### Estado tras la investigación
+
+Registros restaurados a los valores que escribe el driver en reposo:
+`0x02 = 0x8080`, `0x03 = 0x8181`, `0x31 = 0xaf00`, `0x66 = 0x0000`,
+`0x65 = 0x0001`, `0x70 = 0x8008`; `0xc1 = 0x0006` (`GP1_OUT_HI`).
+`Ext Spk Switch` (numid 173) en `on`, ruta UCM en `Speaker1`, sink sin mute y
+al 100 %. Sin procesos de audio huérfanos ni temporales en `/tmp`.
+
+**Conclusión:** el enlace digital DSP↔códec, los relojes, el DAPM, la
+alimentación analógica y el enable del amplificador están correctos y
+verificados durante reproducción real. El silencio no se explica por software:
+queda acotado al tramo `SPO Amp` → pines `SPOLP/SPOLN/SPORP/SPORN` → altavoz,
+es decir, al amplificador físico o su acoplamiento. Descartar eso exigiría
+medida eléctrica en los pads del altavoz, fuera del alcance por SSH.

@@ -160,31 +160,30 @@ problema.
 ### Tema oscuro
 
 El usuario lo pidió así: «tanta luz es molesta», mirando la tablet de noche.
-Se oscurecen **las tres pantallas**, no solo el menú: un menú oscuro con un
-reloj crema seguiría deslumbrando al abrirlo.
+Al principio se oscurecieron **las tres pantallas**, y después pidió que el
+reloj conservara su paleta clara: se le devolvió tal cual estaba.
 
-Tokens compartidos: `--bg:#14161a`, `--surface:#1d2127`, `--fg:#eceae6`,
-`--muted:#9a948c`, `--border:#2c3138`, `--accent-house:#2dd4bf`,
-`--accent-clock:#fb923c`, `--accent-games:#a5b4fc`, `--accent-music:#1ed760`.
-En el reloj se sustituyeron todos los `#fff/#333/#666/#ff6b6b` (grep: 0
-restantes), incluidos modal, inputs, botones y `.home-btn`.
+**Menú y juegos** siguen oscuros, con tokens compartidos: `--bg:#14161a`,
+`--surface:#1d2127`, `--fg:#eceae6`, `--muted:#9a948c`, `--border:#2c3138`,
+`--accent-house:#2dd4bf`, `--accent-clock:#fb923c`, `--accent-games:#a5b4fc`,
+`--accent-music:#1ed760`.
 
-Los segmentos del reloj pasan de colores Material vivos a tonos profundos
-(`#b93a3a … #4a5563`): sobre `#14161a` los originales quemaban la vista y
-hundían el contraste del texto.
+**El reloj vuelve al tema claro original**, commit `f6cdd1b`: fondo metálico
+en degradado (`#bfc0c0 → #e6e7e8 → #a7a8aa`), aguja horaria `#ff6b6b`, aguja
+minutera `#333`, segundero `#ff9a9e`, títulos `#ff6b6b`, textos `#333`/`#666`.
+Los segmentos recuperan los doce colores Material vivos (`#f44336`, `#ff9800`,
+`#ffeb3b`, `#cddc39`, `#4caf50`, `#00bcd4`, `#2196f3`, `#3f51b5`, `#9c27b0`,
+`#e91e63`, `#795548`, `#607d8b`). En `clock/` no queda ni un `var(--…)` ni un
+color del tema oscuro.
 
-Contraste WCAG medido sobre los 12 segmentos:
-
-| Texto | Peor caso sobre segmento | Sobre `--bg` |
-|---|---|---|
-| números grandes (`--fg`) | 3,32:1 | 15,08:1 |
-| números pequeños | 3,12:1 | 15,08:1 |
-
-Los números pequeños empezaron en `--muted`: daban **1,33:1** sobre el mostaza,
-ilegibles. Se cambiaron a `#e8e3db` con `text-shadow`.
+Coste asumido y consciente: los números pequeños van en `#888`, que sobre los
+segmentos saturados da **1,04:1** en el rojo y 1,13:1 en el azul — ilegibles.
+Sobre el fondo del reloj sí cumple (3,54:1 sobre blanco). Es el dibujo
+original; si molesta, `clock/styles.css:110` es la única línea que hay que
+tocar.
 
 Luminancia media de la captura real (0–255): menú **34,0** (antes ~236),
-reloj **39,0**, juegos **24,2**.
+reloj **201,3** (con el tema oscuro llegó a ~39), juegos **24,2**.
 
 ### Botón de vuelta en el reloj
 
@@ -342,10 +341,14 @@ no son los que usa, pero se mantienen compilados por si acaso.
 - **No compilar el overlay en C**: faltan `Xlib.h`, `cairo.h`, `shape.h` y
   `pkg-config`; instalar las dependencias de desarrollo costaba más espacio del
   que ahorra. Xlib + PIL ya baja a 21 MB.
-- **Tema oscuro en las tres pantallas, no solo el menú**: un menú oscuro con el
-  reloj crema sería incoherente y seguiría deslumbrando al abrirlo.
-- **Segmentos atenuados (`#b93a3a…#4a5563`) en vez de colores Material**: sobre
-  `#14161a` los vivos quemaban la vista y bajaban el contraste del texto.
+- **Tema oscuro en menú y juegos; el reloj vuelve a su paleta clara**: se
+  oscurecieron las tres pantallas primero, y el usuario pidió después el reloj
+  como estaba. Sus doce colores Material y el fondo metálico son el dibujo
+  original del niño; el menú y los juegos son pantallas de tránsito y ahí sí
+  compensa no deslumbrar.
+- **Segmentos atenuados (`#b93a3a…#4a5563`) solo en el menú**: sobre `#14161a`
+  los vivos quemaban la vista. El reloj los conserva saturados porque va sobre
+  fondo claro.
 - **Rejilla 2x2 fija** (`grid-template-rows:repeat(2,1fr)`): cuatro tarjetas en
   fila habrían dado 290 px de ancho con texto ilegible en 1280.
 - **Icono de 164 px y tarjeta centrada**: el usuario reconoce la actividad por

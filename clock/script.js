@@ -1,17 +1,17 @@
 // Colores arcoíris para los segmentos (puedes ajustar estos colores para que se parezcan más a la imagen)
 const segmentColors = [
-    '#f44336', // rojo
-    '#ff9800', // naranja
-    '#ffeb3b', // amarillo
-    '#cddc39', // lima
-    '#4caf50', // verde
-    '#00bcd4', // turquesa
-    '#2196f3', // azul
-    '#3f51b5', // azul oscuro
-    '#9c27b0', // violeta
-    '#e91e63', // rosa
-    '#795548', // marrón
-    '#607d8b'  // gris azulado
+    '#b93a3a', // rojo
+    '#c2610c', // naranja
+    '#a1791a', // mostaza
+    '#6b7d1e', // oliva
+    '#2f7d45', // verde
+    '#1c6f7a', // turquesa
+    '#2b5f9e', // azul
+    '#3f4b8f', // azul oscuro
+    '#6b3f8f', // violeta
+    '#8f3a63', // rosa
+    '#6b4a35', // marrón
+    '#4a5563'  // gris azulado
 ];
 
 // Actividades y emojis - Horario de 24 horas para un niño

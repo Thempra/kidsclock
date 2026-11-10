@@ -1,4 +1,4 @@
-# Informe: optimización, menú 2x2 con Spotify y tema oscuro del kiosco
+# Informe: optimización, menú 2x2 con iconos grandes y tema oscuro del kiosco
 
 Equipo: `thempra@192.168.50.214` (hostname `aura`) — Intel Atom x5-Z8350,
 1,8 GiB de RAM, eMMC, MX Linux 23.6 / Debian 12, XFCE 4.20, sysvinit,
@@ -97,9 +97,9 @@ instancias de Firefox solapadas.
 
 ## 2. Menú del kiosco — desplegado y verificado
 
-Commits `de5eec1` (menú de tres tarjetas) y `7ef231b` (Spotify, rejilla 2x2 y
-tema oscuro) en `github.com/Thempra/kidsclock` (rama `main`), publicados en
-GitHub Pages.
+Commits `de5eec1` (menú de tres tarjetas), `7ef231b` (Spotify, rejilla 2x2 y
+tema oscuro) y `783ffc5` (iconos grandes y tarjeta «Música») en
+`github.com/Thempra/kidsclock` (rama `main`), publicados en GitHub Pages.
 
 ### Estructura
 
@@ -116,21 +116,46 @@ kiosk/README.md
 El menú es el `index.html` de la raíz a propósito: la URL del autostart ya
 serviría el menú sin tocar el `.desktop`.
 
-Cuatro tarjetas —Domótica, Reloj, Juegos, Spotify— en grid `2x2`
+Cuatro tarjetas —Domótica, Reloj, Juegos, Música— en grid `2x2`
 (`grid-template-columns:repeat(2,1fr)` / `grid-template-rows:repeat(2,1fr)`,
 gap 22px, padding `22px 36px 32px`). Cada tarjeta lleva franja de acento,
-icono SVG inline (el de Spotify es el logo oficial inline), título, descripción
-y pill. Sin JS de animación, sin webfonts, sin imágenes raster. Áreas táctiles
-≥44 px. Home Assistant no se puede embeber (`x-frame-options: SAMEORIGIN`), así
-que se abre a nivel de pestaña; Spotify igual.
+icono SVG inline, título, descripción y pill. Sin JS de animación, sin
+webfonts, sin imágenes raster. Áreas táctiles ≥44 px. Home Assistant no se
+puede embeber (`x-frame-options: SAMEORIGIN`), así que se abre a nivel de
+pestaña; Música (Spotify) igual.
 
 Una fila de cuatro tarjetas habría dado 290 px de ancho por tarjeta a 1280:
 texto ilegible en una pantalla que se mira a un brazo de distancia. 2x2 da
 593x312 por tarjeta.
 
-Verificación headless a 1280x800: `[36,122,593,312]`, `[651,122,593,312]`,
-`[36,456,593,312]`, `[651,456,593,312]`; sin desbordamiento horizontal ni
-vertical.
+### El icono manda
+
+A petición del usuario el icono pasa a dominar la tarjeta: círculo de **164 px**
+con SVG de **100 px** (antes 76/40), tarjeta centrada en ambos ejes y tipografía
+de apoyo más discreta — título de 27 a 25 px, descripción de 15 a 14, pill de
+13,5 a 12,5. El icono ocupa el 11,4 % del área de la tarjeta y el bloque de
+texto solo 90 px de los 312 de alto, así que se reconoce la tarjeta por el
+dibujo y las letras quedan para confirmar.
+
+180 px de círculo desbordaba la tarjeta (`scrollHeight` > `clientHeight`): el
+icono despegaba del borde superior y la pill se salía. 164 es el máximo que
+cabe con el texto de una línea.
+
+La tarjeta de Spotify se llama **Música**: el niño busca la actividad, no la
+marca. El icono se mantiene en trazo, como los otros tres, para que las cuatro
+tarjetas se lean como un conjunto; la marca solo aparece en la descripción
+(«Canciones y podcasts para la casa») y en la pill «Para todos».
+
+Verificación headless y **en la tablet real** a 1280x800: tarjetas en
+`[36,122,593,312]`, `[651,122,593,312]`, `[36,456,593,312]`, `[651,456,593,312]`;
+los cuatro círculos medidos por píxel a **164x164**; sin desbordamiento
+horizontal ni vertical y sin recorte en ninguna tarjeta.
+
+Ojo al verificar tras un despliegue: GitHub Pages manda `Cache-Control:
+max-age=600` y la tablet siguió sirviendo el HTML viejo (círculos de 76 px) tras
+un `ctrl+L`. Hay que forzar `ctrl+Shift+R`. El fichero en
+`/home/thempra/clock/index.html` ya tenía el nuevo, así que `rsync` no era el
+problema.
 
 ### Tema oscuro
 
@@ -178,7 +203,7 @@ del reinicio:
 | Menú → Domótica | `Home Assistant — Mozilla Firefox` | overlay (1224,744) |
 | Menú → Reloj | `Reloj de Actividades para Niños` | `.home-btn` (56,744) |
 | Menú → Juegos | `Juegos — Mozilla Firefox` | enlace "Volver al menú" (640,545) |
-| Menú → Spotify | `Spotify - Web Player: Listen to Music, Podcasts, and Audiobooks Online` | overlay (1224,744) |
+| Menú → Música | `Spotify - Web Player: Listen to Music, Podcasts, and Audiobooks Online` | overlay (1224,744) |
 
 El overlay se oculta (`IsUnMapped`) en menú, reloj y juegos, y aparece
 (`IsViewable`) en HA y Spotify. Tras el reinicio el ID de su ventana cambia
@@ -290,6 +315,11 @@ no son los que usa, pero se mantienen compilados por si acaso.
   `#14161a` los vivos quemaban la vista y bajaban el contraste del texto.
 - **Rejilla 2x2 fija** (`grid-template-rows:repeat(2,1fr)`): cuatro tarjetas en
   fila habrían dado 290 px de ancho con texto ilegible en 1280.
+- **Icono de 164 px y tarjeta centrada**: el usuario reconoce la actividad por
+  el dibujo, no por la palabra. 180 px desbordaba; 164 es el máximo que cabe
+  con el texto en una línea.
+- **La cuarta tarjeta se llama «Música», no «Spotify»**: se elige actividad, no
+  proveedor. El icono sigue en trazo para que las cuatro se lean como conjunto.
 
 ---
 

@@ -77,7 +77,10 @@ main{
   position:relative;
   display:flex;
   flex-direction:column;
-  padding:26px 28px 22px;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:18px 24px 20px;
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:var(--radius);
@@ -99,42 +102,42 @@ main{
   background:#22272e;
 }
 
+/* El icono manda: ocupa la mayor parte de la tarjeta y se reconoce de un
+   vistazo. Las letras quedan de apoyo, debajo y en tamaño contenido. */
 .icon{
-  width:76px;
-  height:76px;
+  width:164px;
+  height:164px;
   border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
-  background:color-mix(in srgb,var(--tint) 16%,var(--surface));
+  background:color-mix(in srgb,var(--tint) 15%,var(--surface));
   color:var(--tint);
   flex:0 0 auto;
 }
-.icon svg{width:40px;height:40px;display:block}
+.icon svg{width:100px;height:100px;display:block}
 
 .body{
-  margin-top:auto;
-  padding-top:18px;
+  padding-top:14px;
 }
 .body h2{
-  font-size:27px;
+  font-size:25px;
   font-weight:600;
   letter-spacing:-0.02em;
   line-height:1.15;
 }
 .body p{
-  margin-top:8px;
-  font-size:15px;
-  line-height:1.4;
+  margin-top:5px;
+  font-size:14px;
+  line-height:1.35;
   color:var(--muted);
 }
 
 .tag{
-  align-self:flex-start;
-  margin-top:14px;
-  padding:6px 13px;
+  margin-top:10px;
+  padding:4px 12px;
   border-radius:999px;
-  font-size:13.5px;
+  font-size:12.5px;
   font-weight:550;
   color:var(--tint);
   background:color-mix(in srgb,var(--tint) 14%,var(--surface));
@@ -150,9 +153,9 @@ main{
   header{padding:24px}
   main{grid-template-columns:1fr;grid-template-rows:none;gap:16px;padding:20px 24px 24px;overflow-y:auto}
   .card{padding:24px}
-  .icon{width:64px;height:64px}
-  .icon svg{width:34px;height:34px}
-  .body h2{font-size:24px}
+  .icon{width:110px;height:110px}
+  .icon svg{width:68px;height:68px}
+  .body h2{font-size:22px}
 }
 </style>
 </head>
@@ -229,10 +232,10 @@ main{
       </svg>
     </div>
     <div class="body">
-      <h2>Spotify</h2>
-      <p>Música y podcasts para la casa.</p>
+      <h2>Música</h2>
+      <p>Canciones y podcasts para la casa.</p>
     </div>
-    <span class="tag">Música</span>
+    <span class="tag">Para todos</span>
   </a>
 
 </main>

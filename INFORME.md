@@ -1,4 +1,4 @@
-# Informe: optimización y nuevo menú del kiosco
+# Informe: optimización, menú 2x2 con Spotify y tema oscuro del kiosco
 
 Equipo: `thempra@192.168.50.214` (hostname `aura`) — Intel Atom x5-Z8350,
 1,8 GiB de RAM, eMMC, MX Linux 23.6 / Debian 12, XFCE 4.20, sysvinit,
@@ -11,19 +11,20 @@ ventana 1280x800 en (0,0).
 
 ### Antes / después
 
-| Métrica | Antes | Después |
-|---|---|---|
-| RAM disponible | 435–569 MB | **652 MB** |
-| Presión E/S (`/proc/pressure/io`, avg10) | 2,71 | **0,20** |
-| Presión memoria (avg10) | 0,36 | **0,00** |
-| `%wa` | 12,5 | ~0 |
-| Load average (1/5/15) | — | 0,53 / 1,77 / 2,08 |
-| Disco `/` | 84 % | **80 %** (2,8 GB libres) |
-| gettys | 6 | **2** |
-| Sockets TCP en escucha | muchos daemons | **solo 22** |
-| Gobernador CPU | ondemand | `schedutil` ×4 |
-| Panel XFCE | 104,8 MB | 46,9 MB |
-| Swap en uso | — | 617 MB (336 zram + 281 fichero) |
+| Métrica | Antes | Después de optimizar | Tras reinicio (6.1.0-54) |
+|---|---|---|---|
+| RAM disponible | 435–569 MB | 652 MB | **954 MB** |
+| Presión E/S (`/proc/pressure/io`, avg10) | 2,71 | 0,20 | 6,07 en frío / ~0,2 en reposo |
+| Presión memoria (avg10) | 0,36 | 0,00 | 0,29 |
+| `%wa` | 12,5 | ~0 | ~0 |
+| Load average (1/5/15) | — | 0,53 / 1,77 / 2,08 | 2,02 / 0,58 / 0,20 (arranque) |
+| Disco `/` | 84 % | 80 % | **75 %** (3,5 GB libres) |
+| gettys | 6 | 2 | 2 |
+| Sockets TCP en escucha | muchos daemons | solo 22 | solo 22 |
+| Gobernador CPU | ondemand | `schedutil` ×4 | `schedutil` ×4 |
+| Panel XFCE | 104,8 MB | 46,9 MB | 46,9 MB |
+| Swap en uso | — | 617 MB (336 zram + 281 fichero) | **117 MB, todo zram** |
+| Kernel | 6.1.0-34 | 6.1.0-34 | **6.1.0-54** |
 
 ### Cambios, con rutas exactas
 
@@ -96,7 +97,8 @@ instancias de Firefox solapadas.
 
 ## 2. Menú del kiosco — desplegado y verificado
 
-Commit `de5eec1` en `github.com/Thempra/kidsclock` (rama `main`), publicado en
+Commits `de5eec1` (menú de tres tarjetas) y `7ef231b` (Spotify, rejilla 2x2 y
+tema oscuro) en `github.com/Thempra/kidsclock` (rama `main`), publicados en
 GitHub Pages.
 
 ### Estructura
@@ -112,17 +114,52 @@ kiosk/README.md
 ```
 
 El menú es el `index.html` de la raíz a propósito: la URL del autostart ya
-sirve el menú sin tocar el `.desktop`.
+serviría el menú sin tocar el `.desktop`.
 
-Tres tarjetas de 380x614 con franja de acento, icono SVG inline, título,
-descripción y pill. Grid `repeat(3,1fr)`, `overflow:hidden`. Sin JS de
-animación, sin webfonts, sin imágenes raster. Áreas táctiles ≥44 px.
-Home Assistant no se puede embeber (`x-frame-options: SAMEORIGIN`), así que se
-abre a nivel de pestaña.
+Cuatro tarjetas —Domótica, Reloj, Juegos, Spotify— en grid `2x2`
+(`grid-template-columns:repeat(2,1fr)` / `grid-template-rows:repeat(2,1fr)`,
+gap 22px, padding `22px 36px 32px`). Cada tarjeta lleva franja de acento,
+icono SVG inline (el de Spotify es el logo oficial inline), título, descripción
+y pill. Sin JS de animación, sin webfonts, sin imágenes raster. Áreas táctiles
+≥44 px. Home Assistant no se puede embeber (`x-frame-options: SAMEORIGIN`), así
+que se abre a nivel de pestaña; Spotify igual.
 
-Verificación headless a 1280x800: tarjetas en `[44,142,380,614]`,
-`[450,142,380,614]`, `[856,142,380,614]`; sin desbordamiento; franjas
-`#0f766e` / `#c2410c` / `#4f46e5`.
+Una fila de cuatro tarjetas habría dado 290 px de ancho por tarjeta a 1280:
+texto ilegible en una pantalla que se mira a un brazo de distancia. 2x2 da
+593x312 por tarjeta.
+
+Verificación headless a 1280x800: `[36,122,593,312]`, `[651,122,593,312]`,
+`[36,456,593,312]`, `[651,456,593,312]`; sin desbordamiento horizontal ni
+vertical.
+
+### Tema oscuro
+
+El usuario lo pidió así: «tanta luz es molesta», mirando la tablet de noche.
+Se oscurecen **las tres pantallas**, no solo el menú: un menú oscuro con un
+reloj crema seguiría deslumbrando al abrirlo.
+
+Tokens compartidos: `--bg:#14161a`, `--surface:#1d2127`, `--fg:#eceae6`,
+`--muted:#9a948c`, `--border:#2c3138`, `--accent-house:#2dd4bf`,
+`--accent-clock:#fb923c`, `--accent-games:#a5b4fc`, `--accent-music:#1ed760`.
+En el reloj se sustituyeron todos los `#fff/#333/#666/#ff6b6b` (grep: 0
+restantes), incluidos modal, inputs, botones y `.home-btn`.
+
+Los segmentos del reloj pasan de colores Material vivos a tonos profundos
+(`#b93a3a … #4a5563`): sobre `#14161a` los originales quemaban la vista y
+hundían el contraste del texto.
+
+Contraste WCAG medido sobre los 12 segmentos:
+
+| Texto | Peor caso sobre segmento | Sobre `--bg` |
+|---|---|---|
+| números grandes (`--fg`) | 3,32:1 | 15,08:1 |
+| números pequeños | 3,12:1 | 15,08:1 |
+
+Los números pequeños empezaron en `--muted`: daban **1,33:1** sobre el mostaza,
+ilegibles. Se cambiaron a `#e8e3db` con `text-shadow`.
+
+Luminancia media de la captura real (0–255): menú **34,0** (antes ~236),
+reloj **39,0**, juegos **24,2**.
 
 ### Botón de vuelta en el reloj
 
@@ -133,12 +170,27 @@ Verificación headless a 1280x800: tarjetas en `[44,142,380,614]`,
 
 ### Navegación táctil real (clics sobre la pantalla, no simulación)
 
-Menú → Reloj, Reloj → Menú, Menú → Juegos, Juegos → Menú, Menú → Home
-Assistant. Todos correctos.
+Cuatro rutas de ida y vuelta desde el menú, todas correctas antes y después
+del reinicio:
+
+| Ruta | Título observado al entrar | Vuelta |
+|---|---|---|
+| Menú → Domótica | `Home Assistant — Mozilla Firefox` | overlay (1224,744) |
+| Menú → Reloj | `Reloj de Actividades para Niños` | `.home-btn` (56,744) |
+| Menú → Juegos | `Juegos — Mozilla Firefox` | enlace "Volver al menú" (640,545) |
+| Menú → Spotify | `Spotify - Web Player: Listen to Music, Podcasts, and Audiobooks Online` | overlay (1224,744) |
+
+El overlay se oculta (`IsUnMapped`) en menú, reloj y juegos, y aparece
+(`IsViewable`) en HA y Spotify. Tras el reinicio el ID de su ventana cambia
+(`0x3600000` → `71303168`): hay que buscarlo con
+`xdotool search --name "^kiosk-home-btn$"`, no reutilizar el viejo.
+
+Píxel del botón tras el reinicio: blanco (255,255,255) en el centro, con
+esquinas al fondo de HA — la máscara SHAPE sigue funcionando.
 
 ---
 
-## 3. Defecto abierto: sin salida desde Home Assistant
+## 3. Defecto cerrado: sin salida desde Home Assistant
 
 **Problema.** Al entrar en Domótica el usuario quedaba atrapado: HA no se puede
 embeber, y el kiosco no tiene barra de navegación ni teclado.
@@ -179,17 +231,33 @@ kiosco no exporta `XDG_CURRENT_DESKTOP`, y restringirlo impediría el arranque.
 
 ---
 
-## 4. Upgrade del sistema — terminado
+## 4. Reinicio y kernel 6.1.0-54 — hecho
 
 `apt-get full-upgrade` duró 2121 s y terminó limpio. `dpkg --audit` vacío.
 DKMS compiló e instaló en **ambos** kernels:
 
-| Módulo | 6.1.0-34 (en ejecución) | 6.1.0-54 (instalado) |
+| Módulo | 6.1.0-34 (ya purgado) | 6.1.0-54 (en ejecución) |
 |---|---|---|
 | `rtl8821ce` | installed | installed |
 | `rtl8821cu` | installed | installed |
+| `8812au` | — | installed |
+| `broadcom-sta` | — | installed |
 
-`apt-get clean` tras el upgrade recuperó 0,9 GB: `/` pasó de 87 % a **80 %**.
+GRUB ya apuntaba a 6.1.0-54 como entrada por defecto, así que el reinicio no
+exigió tocar `/etc/default/grub`. Arranque verificado: SSH responde a los 66 s
+con `uname -r` = `6.1.0-54-amd64`, WiFi arriba por `rtw88_8822be`, los cuatro
+núcleos en `schedutil`, `zram0` a 1,4 G y swap en **0 B**.
+
+Estado tras el reinicio, con el kiosco cargado: RAM disponible **954 MB**
+(frente a 652 MB antes), swap total usada 117 MB solo en zram, load 2,02 en el
+primer minuto por el arranque. `/proc/pressure/io` avg10 6,07 en frío y 0,20
+en reposo.
+
+Tras confirmar que el kernel nuevo arranca se purgó el viejo en tres paquetes
+exactos —`linux-image-6.1.0-34-amd64`, `linux-headers-6.1.0-34-amd64`,
+`linux-headers-6.1.0-34-common`— sin `autoremove`, que habría arrastrado 15
+librerías (Qt5 WebEngine, socat, lsscsi). `/` pasó de 79 % a **75 %** (3,5 GB
+libres); `grub.cfg` regenerado sin ninguna referencia a 6.1.0-34.
 
 El módulo WiFi de la tablet es `rtw88_8822be`, del kernel; los DKMS de Realtek
 no son los que usa, pero se mantienen compilados por si acaso.
@@ -216,20 +284,33 @@ no son los que usa, pero se mantienen compilados por si acaso.
 - **No compilar el overlay en C**: faltan `Xlib.h`, `cairo.h`, `shape.h` y
   `pkg-config`; instalar las dependencias de desarrollo costaba más espacio del
   que ahorra. Xlib + PIL ya baja a 21 MB.
+- **Tema oscuro en las tres pantallas, no solo el menú**: un menú oscuro con el
+  reloj crema sería incoherente y seguiría deslumbrando al abrirlo.
+- **Segmentos atenuados (`#b93a3a…#4a5563`) en vez de colores Material**: sobre
+  `#14161a` los vivos quemaban la vista y bajaban el contraste del texto.
+- **Rejilla 2x2 fija** (`grid-template-rows:repeat(2,1fr)`): cuatro tarjetas en
+  fila habrían dado 290 px de ancho con texto ilegible en 1280.
 
 ---
 
-## 6. Pendiente de decisión
+## 6. Pantalla de bloqueo y Conky — resuelto
 
-1. **Reinicio.** El kernel 6.1.0-54 está instalado con su `initrd` y los
-   módulos DKMS listos, pero se sigue ejecutando 6.1.0-34. `uptime`: 6 días
-   23 h. Tras reiniciar se liberan los ~617 MB de swap que dejó el kiosco
-   viejo, se estrena el kernel y se puede purgar `linux-image-6.1.0-34-amd64`
-   (~350 MB más). **No se ha reiniciado sin permiso.**
-2. **Conky** está parado desde la optimización del panel; se restaura con
-   `sh ~/.conky/conky-startup.sh`.
-3. **`xfce4-screensaver`** sigue en `rc2.d`. Es inocuo (`enabled=false` evita el
-   bloqueo); se puede quitar con `update-rc.d xfce4-screensaver disable`.
+**`xfce4-screensaver`.** No es un servicio: no existe script LSB ni enlaces en
+`rc2.d`/`rc5.d`, y `update-rc.d xfce4-screensaver disable` falla con
+`cannot find a LSB script`. Arranca por autostart de sesión. Se marcó
+`Hidden=true` en `/etc/xdg/autostart/xfce4-screensaver.desktop` y en
+`/etc/xdg/autostart/xscreensaver.desktop` (este último apuntaba a un
+`xscreensaver` que ni siquiera está instalado). Validado con
+`desktop-file-validate`; tras el reinicio no hay ningún proceso de salvapantallas.
+
+**Conky.** Restaurado con `conky -c ~/.conky/MX-CowonMildBlue/MX-Cowon_MildBlue`
+(26 MB de RSS) y arranca solo por `~/.config/autostart/conky.desktop`, que
+ejecuta `conky-startup.sh`. **Pero queda invisible**: su configuración usa
+`own_window_hints = 'undecorated,below,skip_taskbar,skip_pager,sticky'`, así que
+se dibuja por debajo de la ventana del kiosco, que ocupa los 1280x800 completos.
+Puede comprobarse con `wmctrl`: la ventana `conky (aura)` está en (1029,35)
+216x272, y esa zona de la captura es el menú, no el reloj de Conky. Verlo
+exigiría subirlo por encima del kiosco, y eso rompe la pantalla completa táctil.
 
 ---
 
@@ -238,6 +319,9 @@ no son los que usa, pero se mantienen compilados por si acaso.
 - `~/.ssh/authorized_keys` de `thempra` — clave añadida para acceso directo.
 - 15 servicios deshabilitados en el arranque; `/etc/rc2.d` solo conserva lo
   esencial.
+- 11 autostarts neutralizados con `Hidden=true` en `/etc/xdg/autostart/`,
+  incluidos `xfce4-screensaver.desktop` y `xscreensaver.desktop`.
 - `/etc/inittab` modificado (backup `.bak-optimizacion` disponible).
 - `earlyoom` activo como red de seguridad contra el OOM killer.
-- 27 paquetes purgados; 0,9 GB recuperados tras el upgrade.
+- 27 paquetes purgados en la optimización + 3 del kernel 6.1.0-34; 0,9 GB tras
+  el upgrade y 0,5 GB tras purgar el kernel viejo.

@@ -254,6 +254,39 @@ RSS estable en 21 MB.
 `~/.config/autostart/kiosk-home-btn.desktop`. Sin `OnlyShowIn`: el entorno del
 kiosco no exporta `XDG_CURRENT_DESKTOP`, y restringirlo impediría el arranque.
 
+### Modo kiosco en Home Assistant (`?kiosk`)
+
+La tarjeta Domótica enlaza a `https://domotica.thempra.net/lovelace/home?kiosk`
+para que el dashboard ocupe los 1280x800 completos, sin cabecera ni barra
+lateral que nadie puede alcanzar sin ratón.
+
+**`?kiosk` no es nativo de Home Assistant.** El frontend tiene la propiedad
+`hass.kioskMode`, pero solo cambia con el evento `hass-kiosk-mode`, que emite la
+tarjeta HACS `kiosk-mode`. Sin esa tarjeta el parámetro se ignora en silencio:
+comparando capturas con y sin `?kiosk` la diferencia media era 0,0–0,2 de
+brillo. Comprobado en el bundle real (`app.7349e8752c08ffeb.js`):
+`window.addEventListener("hass-kiosk-mode", e => this._updateHass({kioskMode:
+e.detail.enable}))`.
+
+Instalado `NemesisRE/kiosk-mode` v15.0.0 (el fork mantenido: el original
+`maykar/kiosk-mode` está parado en 1.7.2 de 2021) en la instancia Docker del
+Nuc — HA 2026.9.0, config `/data/homeassistant`:
+
+| Paso | Ruta / comando |
+|---|---|
+| Bundle | `/data/homeassistant/www/community/kiosk-mode/kiosk-mode.js` (59 KB) |
+| Recurso Lovelace | `.storage/lovelace_resources` → `/local/community/kiosk-mode/kiosk-mode.js?v=15.0.0`, tipo `module` |
+| Recarga | `docker restart homeassistant` (la lista de recursos vive en memoria) |
+
+Copia previa de `.storage/lovelace_resources` en `/root/lovelace_resources.bak.*`.
+
+**Verificación en la tablet.** Con `?kiosk` el contenido del dashboard empieza
+en **(0,0)**; sin el parámetro, en **(55,55)** por la cabecera y la barra
+lateral. Flujo completo desde el menú: toque en Domótica → dashboard a pantalla
+completa con el overlay de vuelta visible → botón (1224,744) → menú.
+
+Si algún día hace falta desactivarlo sin tocar la URL, `?disable_km` al final.
+
 ---
 
 ## 4. Reinicio y kernel 6.1.0-54 — hecho

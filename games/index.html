@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Juegos</title>
+<style>
+  :root{
+    --bg:#f4f1ec; --surface:#ffffff; --fg:#22201d; --muted:#6b6560;
+    --border:#e2dcd3; --accent-house:#0f766e; --accent-clock:#c2410c;
+    --accent-games:#4f46e5; --kid:#f59e0b;
+    --radius:24px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--fg);
+    font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    height:100vh;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  main{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:20px;
+    padding:32px;
+    text-align:center;
+    max-width:640px;
+  }
+  .icon{
+    width:120px;
+    height:120px;
+    color:var(--accent-games);
+    display:block;
+  }
+  h1{
+    margin:0;
+    font-size:clamp(32px,7vw,52px);
+    font-weight:700;
+    letter-spacing:-0.02em;
+    line-height:1.1;
+  }
+  .tag{
+    margin:0;
+    font-size:18px;
+    font-weight:600;
+    color:var(--accent-games);
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 20px;
+    line-height:1.4;
+  }
+  .back{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    min-width:44px;
+    margin-top:8px;
+    padding:14px 32px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:999px;
+    color:var(--fg);
+    font-size:20px;
+    font-weight:600;
+    text-decoration:none;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .back:active{
+    transform:scale(.97);
+    box-shadow:0 4px 14px rgba(34,32,29,.14);
+  }
+</style>
+</head>
+<body>
+<main>
+  <svg class="icon" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Mando de consola">
+    <path d="M33 40h54a17 17 0 0 1 16.6 13.1l6 26A14 14 0 0 1 82 92l-9.5-11h-25L38 92a14 14 0 0 1-27.6-12.9l6-26A17 17 0 0 1 33 40Z"/>
+    <path d="M32 58v16"/>
+    <path d="M24 66h16"/>
+    <circle cx="82" cy="60" r="4"/>
+    <circle cx="92" cy="70" r="4"/>
+  </svg>
+  <h1>Juegos</h1>
+  <p class="tag">En construcción</p>
+  <a class="back" href="../index.html">Volver al menú</a>
+</main>
+</body>
+</html>

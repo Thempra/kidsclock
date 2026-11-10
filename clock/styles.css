@@ -362,3 +362,30 @@ body {
 .modal-actions button[type="button"]:hover {
     background: #888;
 } 
+
+/* Botón de vuelta al menú del kiosco */
+.home-btn {
+    position: fixed;
+    left: 18px;
+    bottom: 18px;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #333333;
+    text-decoration: none;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.22);
+}
+.home-btn svg {
+    width: 40px;
+    height: 40px;
+    display: block;
+    pointer-events: none;
+}
+.home-btn:active {
+    transform: scale(0.94);
+}

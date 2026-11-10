@@ -1,65 +1,246 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reloj de Actividades para Niños</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Casa</title>
+<style>
+:root{
+  --bg:#f4f1ec; --surface:#ffffff; --fg:#22201d; --muted:#6b6560;
+  --border:#e2dcd3; --accent-house:#0f766e; --accent-clock:#c2410c;
+  --accent-games:#4f46e5; --kid:#f59e0b;
+  --radius:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+
+header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:24px;
+  padding:36px 44px 0;
+  flex:0 0 auto;
+}
+.brand h1{
+  font-size:34px;
+  font-weight:650;
+  letter-spacing:-0.02em;
+  line-height:1.1;
+}
+.brand p{
+  margin-top:6px;
+  font-size:16px;
+  color:var(--muted);
+}
+.clock{
+  text-align:right;
+}
+.clock time{
+  display:block;
+  font-size:46px;
+  font-weight:600;
+  letter-spacing:-0.03em;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.clock span{
+  display:block;
+  margin-top:6px;
+  font-size:15px;
+  color:var(--muted);
+  text-transform:capitalize;
+}
+
+main{
+  flex:1 1 auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:26px;
+  padding:34px 44px 44px;
+  min-height:0;
+}
+
+.card{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  padding:34px 32px 30px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  text-decoration:none;
+  color:inherit;
+  box-shadow:0 1px 2px rgba(34,32,29,.05);
+  transition:transform .15s ease,box-shadow .15s ease;
+  overflow:hidden;
+  min-height:0;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto 0;
+  height:5px;
+  background:var(--tint);
+}
+.card:active{
+  transform:scale(.985);
+  box-shadow:0 1px 1px rgba(34,32,29,.06);
+}
+
+.icon{
+  width:92px;
+  height:92px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:color-mix(in srgb,var(--tint) 12%,#fff);
+  color:var(--tint);
+  flex:0 0 auto;
+}
+.icon svg{width:48px;height:48px;display:block}
+
+.body{
+  margin-top:auto;
+  padding-top:28px;
+}
+.body h2{
+  font-size:31px;
+  font-weight:600;
+  letter-spacing:-0.02em;
+  line-height:1.15;
+}
+.body p{
+  margin-top:10px;
+  font-size:16px;
+  line-height:1.45;
+  color:var(--muted);
+}
+
+.tag{
+  align-self:flex-start;
+  margin-top:22px;
+  padding:7px 15px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:550;
+  color:var(--tint);
+  background:color-mix(in srgb,var(--tint) 10%,#fff);
+  border:1px solid color-mix(in srgb,var(--tint) 26%,#fff);
+}
+
+.house{--tint:var(--accent-house)}
+.reloj{--tint:var(--accent-clock)}
+.juegos{--tint:var(--accent-games)}
+
+@media (max-width:980px){
+  header{padding:24px}
+  main{grid-template-columns:1fr;gap:16px;padding:20px 24px 24px;overflow-y:auto}
+  .card{padding:24px}
+  .icon{width:64px;height:64px}
+  .icon svg{width:34px;height:34px}
+  .body h2{font-size:24px}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="rainbow-clock">
-            <div class="clock-stack">
-                <svg class="rainbow-bg" width="480" height="480" viewBox="0 0 480 480">
-                    <!-- Segmentos de color para cada hora -->
-                    <g id="segments"></g>
-                </svg>
-                <div class="clock-face">
-                    <div class="hand hour-hand"></div>
-                    <div class="hand minute-hand"></div>
-                    <div class="hand second-hand"></div>
-                    <!-- Números grandes y pequeños -->
-                    <div class="numbers">
-                        <!-- Los números se insertarán por JS -->
-                    </div>
-                    <!-- Huecos para imágenes de actividades -->
-                    <div class="activity-images">
-                        <!-- Las imágenes se insertarán por JS -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="activities-block">
-            <button class="settings-btn" id="settings-btn" title="Configurar actividades">⚙️ Configurar actividades</button>
-            <div class="digital-time" id="digital-time"></div>
-            <div class="date" id="date">Lunes, 1 de Enero</div>
-            <div class="activities">
-                <div class="activity" id="current-activity">
-                    <h2>Actividad Actual</h2>
-                    <p>Desayunar</p>
-                </div>
-                <div class="activity" id="next-activity">
-                    <h2>Próxima Actividad</h2>
-                    <p>Ir al colegio</p>
-                </div>
-            </div>
-        </div>
+
+<header>
+  <div class="brand">
+    <h1>Casa</h1>
+    <p>Elige una pantalla</p>
+  </div>
+  <div class="clock">
+    <time id="hora">--:--</time>
+    <span id="fecha"></span>
+  </div>
+</header>
+
+<main>
+
+  <a class="card house" href="https://domotica.thempra.net/lovelace/home">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.6 12 3l9 7.6"/>
+        <path d="M5.5 9.3V20a1 1 0 0 0 1 1h4v-6.2h3V21h4a1 1 0 0 0 1-1V9.3"/>
+      </svg>
     </div>
-    <!-- Modal de configuración -->
-    <div class="modal-bg" id="modal-bg">
-        <div class="modal-settings">
-            <h2>Configura las actividades por hora</h2>
-            <form id="settings-form">
-                <div class="settings-list" id="settings-list">
-                    <!-- Aquí se insertan los inputs por JS -->
-                </div>
-                <div class="modal-actions">
-                    <button type="button" id="close-settings">Cancelar</button>
-                    <button type="submit">Guardar</button>
-                </div>
-            </form>
-        </div>
+    <div class="body">
+      <h2>Domótica</h2>
+      <p>Luces, clima y el estado de la casa.</p>
     </div>
-    <script src="script.js"></script>
+    <span class="tag">Hogar</span>
+  </a>
+
+  <a class="card reloj" href="clock/index.html">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 7.2V12l3.4 2.1"/>
+      </svg>
+    </div>
+    <div class="body">
+      <h2>Reloj</h2>
+      <p>Qué toca ahora, con la esfera de actividades.</p>
+    </div>
+    <span class="tag">Familia</span>
+  </a>
+
+  <a class="card juegos" href="games/index.html">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7.5 8h9a4.5 4.5 0 0 1 4.4 3.6l.9 4.5A2.9 2.9 0 0 1 19 19.3a2.9 2.9 0 0 1-2.4-1.3L15.4 16H8.6l-1.2 2A2.9 2.9 0 0 1 5 19.3a2.9 2.9 0 0 1-2.8-3.2l.9-4.5A4.5 4.5 0 0 1 7.5 8Z"/>
+        <path d="M7.4 11.6v2.2M6.3 12.7h2.2"/>
+        <circle cx="16.2" cy="12" r=".9"/>
+        <circle cx="17.8" cy="13.6" r=".9"/>
+      </svg>
+    </div>
+    <div class="body">
+      <h2>Juegos</h2>
+      <p>Todavía estamos preparándolo.</p>
+    </div>
+    <span class="tag">Pequeños</span>
+  </a>
+
+</main>
+
+<script>
+(function () {
+  var hora = document.getElementById('hora');
+  var fecha = document.getElementById('fecha');
+  var lastMinute = '';
+
+  function tick() {
+    var now = new Date();
+    var h = now.getHours();
+    var m = now.getMinutes();
+    var stamp = h + ':' + m;
+    if (stamp !== lastMinute) {
+      lastMinute = stamp;
+      hora.textContent = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+      fecha.textContent = now.toLocaleDateString('es-ES', {
+        weekday: 'long', day: 'numeric', month: 'long'
+      });
+    }
+  }
+
+  tick();
+  setInterval(tick, 10000);
+})();
+</script>
 </body>
-</html> 
+</html>

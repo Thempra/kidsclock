@@ -31,8 +31,12 @@ ventana 1280x800 en (0,0).
 **Servicios parados y deshabilitados** (`update-rc.d <svc> disable` +
 `/etc/init.d/<svc> stop`): `cups-browsed, cups, saned, avahi-daemon,
 nfs-kernel-server, rpcbind, nfs-common, mdadm, smartmontools, rsync, openvpn,
-open-vm-tools, spice-vdagent, bluetooth, haveged`. Además se mataron
-`ModemManager` y `apt-notifier`.
+open-vm-tools, spice-vdagent, haveged`. Además se mataron `ModemManager` y
+`apt-notifier`.
+
+`bluetooth` figuraba en esa lista y **se volvió a habilitar** al integrar el
+altavoz por Bluetooth (sección 9): `update-rc.d -f bluetooth remove` seguido de
+`update-rc.d bluetooth defaults`, con enlaces `S04bluetooth` en `rc2.d`–`rc5.d`.
 
 **zram** — `/etc/default/zramswap`: `ALGO=lz4`, `PERCENT=75`,
 `PRIORITY=100`. Resultado: `/dev/zram0` de 1,4 GB con prioridad 100, y
@@ -383,8 +387,8 @@ exigiría subirlo por encima del kiosco, y eso rompe la pantalla completa tácti
 ## 7. Cambios persistentes de seguridad y sistema
 
 - `~/.ssh/authorized_keys` de `thempra` — clave añadida para acceso directo.
-- 15 servicios deshabilitados en el arranque; `/etc/rc2.d` solo conserva lo
-  esencial.
+- 22 servicios con enlace `K01`/`K02` de parada en `/etc/rc2.d`; quedan 21
+  enlaces `S` de arranque, entre ellos `S04bluetooth` (sección 9).
 - 11 autostarts neutralizados con `Hidden=true` en `/etc/xdg/autostart/`,
   incluidos `xfce4-screensaver.desktop` y `xscreensaver.desktop`.
 - `/etc/inittab` modificado (backup `.bak-optimizacion` disponible).
@@ -394,7 +398,7 @@ exigiría subirlo por encima del kiosco, y eso rompe la pantalla completa tácti
 
 ---
 
-## 8. Audio del altavoz interno — investigación cerrada
+## 8. Altavoz interno — sin sonido, causa no determinada
 
 El altavoz interno no emite sonido. Códec **Realtek RT5672** (`i2c-1`, dir.
 `0x1c`, ACPI `i2c-10EC5670:00`), tarjeta ALSA `card 1: chtbswrt5672`, driver
@@ -459,9 +463,118 @@ Registros restaurados a los valores que escribe el driver en reposo:
 `Ext Spk Switch` (numid 173) en `on`, ruta UCM en `Speaker1`, sink sin mute y
 al 100 %. Sin procesos de audio huérfanos ni temporales en `/tmp`.
 
-**Conclusión:** el enlace digital DSP↔códec, los relojes, el DAPM, la
-alimentación analógica y el enable del amplificador están correctos y
-verificados durante reproducción real. El silencio no se explica por software:
-queda acotado al tramo `SPO Amp` → pines `SPOLP/SPOLN/SPORP/SPORN` → altavoz,
-es decir, al amplificador físico o su acoplamiento. Descartar eso exigiría
-medida eléctrica en los pads del altavoz, fuera del alcance por SSH.
+**Conclusión:** hay evidencia de que el enlace digital DSP↔códec, los relojes,
+el DAPM y la alimentación analógica están bien. **No** hay evidencia de que el
+silencio sea un fallo de hardware: `SPO Amp` es `SND_SOC_DAPM_PGA_E(…,
+SND_SOC_NOPM, …)`, es decir, un widget virtual que no escribe ningún registro,
+así que su estado `On` no demuestra que la salida esté activa. El tramo
+`SPO Amp → SPOLP/SPOLN/SPORP/SPORN` no se ha podido instrumentar por software.
+Causa raíz: **no determinada**. La única prueba concluyente sigue siendo
+auditiva, y no la hay para este altavoz.
+
+---
+
+## 9. Bluetooth: firmware, H5 y controlador visible para `bluetoothd`
+
+Objetivo: sacar el audio por un altavoz Bluetooth, ya que el altavoz interno no
+lo emite. El equipo lleva un combo **RTL8822BE**: WiFi por PCIe
+(`rtw_8822be 0000:01:00.0`) y **Bluetooth por UART con protocolo H5**, sobre el
+serdev ACPI `8086228A:00` (modalias `acpi:OBDA8723:`). No existe `/dev/ttyS1`:
+el puerto lo posee el driver serdev (`/sys/bus/serial/drivers/hci_uart_h5`).
+
+### Qué fallaba, en orden
+
+| Problema | Síntoma | Solución |
+|---|---|---|
+| El `btrtl` de la distribución no reconoce la variante UART del 8822B | Nunca se descarga el parche: el chip sigue en ROM | Entrada `IC_INFO(RTL_ROM_LMP_8822B, 0xb, 0x7, HCI_UART)` en la tabla |
+| El config de 33 B sintético corrompía la imagen | `Invalid header checksum` | Usar el config real de 14 B (`rtl8822b_config.bin`) |
+| El config no trae entrada `0x0c` (velocidad/flow control) | `btrtl_get_uart_settings()` abortaba con `-ENOENT` | Mantener 115200 y sin flow control, que es lo que hace el driver del fabricante |
+| El último fragmento nunca recibe `Command Complete` | Timeout de 5 s y descarga fallida | Aceptar `-ETIMEDOUT` **solo** en el último fragmento |
+| Tras el último fragmento el chip reinicia el enlace H5 | `READ_LOCAL_VERSION` falla con `-110` | Reintentar la lectura hasta 5 veces, 1,5 s entre intentos |
+
+### El fallo que dejaba el controlador invisible
+
+Con lo anterior el firmware ya se descargaba, pero `hciconfig hci0 up` dejaba el
+dispositivo `UP RUNNING` y aun así `btmgmt info` respondía `Index list with 0
+items` y `bluetoothctl` no veía controlador alguno.
+
+Causa, en el código del kernel 6.1.190:
+
+1. `hci_dev_open_sync()` exige que el *setup* del driver termine bien. El
+   `-ETIMEDOUT` del último fragmento **abortaba** `h5_btrtl_setup()`.
+2. Por eso el primer `hci_dev_do_open()` fallaba.
+3. `hci_power_on()` solo limpia `HCI_SETUP` y llama a `mgmt_index_added()`
+   **después** de que `hci_dev_do_open()` devuelva 0 (`hci_core.c:942-976`).
+4. `HCI_SETUP` quedaba puesto para siempre, y `read_index_list()`
+   (`mgmt.c:431-470`) **omite** todo dispositivo con ese flag.
+5. Un `hciconfig hci0 up` posterior usa la ruta `ioctl` (`hci_dev_open()`,
+   `hci_core.c:460`), que nunca llama a `mgmt_index_added()`: el dispositivo
+   queda arriba pero fuera del interfaz de gestión.
+
+De ahí que `UP RUNNING` no sea prueba de nada: hay que mirar `btmgmt info`.
+
+### Arreglo aplicado (`drivers/bluetooth/btrtl.c`)
+
+Módulo fuera del árbol, en `/lib/modules/6.1.0-54-amd64/updates/btrtl.ko`,
+compilado desde `/home/thempra/btpatch/`. Cinco cambios, sin parámetros de
+módulo:
+
+| Cambio | Efecto |
+|---|---|
+| Entrada IC para 8822B/UART en la tabla | Carga `rtl8822b_fw.bin` + `rtl8822bs_config` |
+| `data_frags` calculado con techo, longitud real del último fragmento | Envía exactamente 20256 B de parche + 14 B de config |
+| Timeout tolerado en el último fragmento | No aborta la descarga |
+| `READ_LOCAL_VERSION` con 5 reintentos y fallo no fatal | El *setup* termina bien aunque el chip esté reiniciando |
+| Config sin `0x0c` → 115200 sin flow control | Coincide con el driver del fabricante |
+| `btrtl_get_uart_settings()` con `!ic_info` | Un chip ya parcheado se reconoce sin volver a descargar |
+
+El parche completo son 85 líneas añadidas y 20 quitadas frente al `btrtl.c`
+original de 6.1.190.
+
+### Verificación en arranque en frío
+
+Tras `/sbin/reboot`, sin `/etc/modprobe.d/rtl8822b-h5.conf` y sin parámetros:
+
+```
+[25.017] RTL: loading rtl_bt/rtl8822bs_config-OBDA8723.bin
+[25.017] RTL: no 0x0c entry, keeping 115200
+[25.038] RTL: cfg_sz 14, total sz 20270
+[29.582] RTL: last frag: no event, ok
+[39.726] RTL: HCI_OP_READ_LOCAL_VERSION failed (-110)
+[39.726] RTL: version read lost during reset, retrying
+[41.525] RTL: fw version 0xab6b705c      <- firmware del parche, no la ROM
+[41.745] Bluetooth: MGMT ver 1.22
+```
+
+```
+$ sudo btmgmt info
+Index list with 1 item
+hci0:  addr 00:E0:4C:23:99:87  version 8  manufacturer 93
+       current settings: powered bondable ssp br/edr le secure-conn
+$ bluetoothctl list
+Controller 00:E0:4C:23:99:87 aura [default]
+```
+
+`fw_version 0xab6b705c` coincide con la cabecera de `rtl8822b_fw.bin`
+(`hci_rev=ab6b`, `lmp_subver=705c`), lo que demuestra que el parche se aplicó y
+sobrevive al reinicio del chip. El controlador queda `powered` por
+`AutoEnable=true` de `/etc/bluetooth/main.conf`.
+
+### Pila de audio lista
+
+`bluetoothd` 5.66 registra todos los *endpoints* A2DP (SBC, SBC-XQ, aptX,
+FastStream, Opus), y WirePlumber carga su monitor bluez
+(`/usr/share/wireplumber/bluetooth.lua.d/90-enable-all.lua`) con
+`libspa-0.2-bluetooth` instalado. Al emparejar un dispositivo de audio debería
+aparecer un sink `bluez_output.<MAC>.1` automáticamente.
+
+### Estado
+
+El controlador Bluetooth funciona de extremo a extremo: firmware descargado,
+MAC real, visible para `bluetoothd`, `powered` y con `rfkill` sin bloqueo.
+
+**Pendiente:** emparejar el altavoz. En el aire solo se detectaron televisores
+(`50" QLED`, `[TV] Samsung 7 Series (50)`) y un PC; ambos rechazan el
+emparejamiento con `AuthenticationFailed` porque requieren confirmación en su
+pantalla. El altavoz debe estar en modo emparejamiento para completar el tramo
+A2DP y hacer la prueba audible.

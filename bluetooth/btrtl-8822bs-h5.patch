@@ -1,0 +1,172 @@
+--- a/drivers/bluetooth/btrtl.c
++++ b/drivers/bluetooth/btrtl.c
+@@ -215,6 +215,14 @@
+ 	  .fw_name  = "rtl_bt/rtl8822cu_fw.bin",
+ 	  .cfg_name = "rtl_bt/rtl8822cu_config" },
+ 
++	/* 8822BS with UART interface */
++	{ IC_INFO(RTL_ROM_LMP_8822B, 0xb, 0x7, HCI_UART),
++	  .config_needed = true,
++	  .has_rom_version = true,
++	  .has_msft_ext = true,
++	  .fw_name  = "rtl_bt/rtl8822b_fw.bin",
++	  .cfg_name = "rtl_bt/rtl8822bs_config" },
++
+ 	/* 8822B */
+ 	{ IC_INFO(RTL_ROM_LMP_8822B, 0xb, 0x7, HCI_USB),
+ 	  .config_needed = true,
+@@ -503,37 +511,53 @@
+ 				 const unsigned char *data, int fw_len)
+ {
+ 	struct rtl_download_cmd *dl_cmd;
+-	int frag_num = fw_len / RTL_FRAG_LEN + 1;
+ 	int frag_len = RTL_FRAG_LEN;
+ 	int ret = 0;
+ 	int i;
+ 	struct sk_buff *skb;
+ 	struct hci_rp_read_local_version *rp;
++	int data_frags = (fw_len + RTL_FRAG_LEN - 1) / RTL_FRAG_LEN;
++
++	if (!data_frags)
++		data_frags = 1;
+ 
+ 	dl_cmd = kmalloc(sizeof(struct rtl_download_cmd), GFP_KERNEL);
+ 	if (!dl_cmd)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < frag_num; i++) {
++	for (i = 0; i < data_frags; i++) {
+ 		struct sk_buff *skb;
+-
+-		BT_DBG("download fw (%d/%d)", i, frag_num);
+ 
+ 		if (i > 0x7f)
+ 			dl_cmd->index = (i & 0x7f) + 1;
+ 		else
+ 			dl_cmd->index = i;
+ 
+-		if (i == (frag_num - 1)) {
+-			dl_cmd->index |= 0x80; /* data end */
+-			frag_len = fw_len % RTL_FRAG_LEN;
++		if (i == (data_frags - 1)) {
++			frag_len = fw_len - (data_frags - 1) * RTL_FRAG_LEN;
++			/* The vendor driver marks the last packet as data end. */
++			dl_cmd->index |= 0x80;
+ 		}
++
+ 		memcpy(dl_cmd->data, data, frag_len);
+ 
+-		/* Send download command */
+ 		skb = __hci_cmd_sync(hdev, 0xfc20, frag_len + 1, dl_cmd,
+ 				     HCI_INIT_TIMEOUT);
+ 		if (IS_ERR(skb)) {
++			/* The last fragment makes the controller jump into the
++			 * freshly downloaded firmware: it drops the command and
++			 * never reports Command Complete. The vendor driver only
++			 * waits for the H5 link ack here, so treat the timeout as
++			 * success and let the caller verify by reading the local
++			 * version.
++			 */
++			if (i == (data_frags - 1) &&
++			    PTR_ERR(skb) == -ETIMEDOUT) {
++				rtl_dev_info(hdev, "last frag: no event, ok");
++				data += RTL_FRAG_LEN;
++				continue;
++			}
++
+ 			rtl_dev_err(hdev, "download fw command failed (%ld)",
+ 				    PTR_ERR(skb));
+ 			ret = PTR_ERR(skb);
+@@ -551,17 +575,30 @@
+ 		data += RTL_FRAG_LEN;
+ 	}
+ 
+-	skb = btrtl_read_local_version(hdev);
+-	if (IS_ERR(skb)) {
+-		ret = PTR_ERR(skb);
+-		rtl_dev_err(hdev, "read local version failed");
+-		goto out;
++	/* The last fragment makes the controller jump into the new firmware
++	 * and reset the H5 link, so a command issued right away is lost. The
++	 * vendor driver only waits for the H5 ack here. Retry a few times
++	 * instead of failing HCI init: a failed init leaves HCI_SETUP set and
++	 * the management interface never learns about the controller, which
++	 * leaves it invisible to bluetoothd even though it is up.
++	 */
++	for (i = 0; i < 5; i++) {
++		skb = btrtl_read_local_version(hdev);
++		if (!IS_ERR(skb))
++			break;
++		rtl_dev_info(hdev, "version read lost during reset, retrying");
++		msleep(1500);
+ 	}
+ 
+-	rp = (struct hci_rp_read_local_version *)skb->data;
+-	rtl_dev_info(hdev, "fw version 0x%04x%04x",
+-		     __le16_to_cpu(rp->hci_rev), __le16_to_cpu(rp->lmp_subver));
+-	kfree_skb(skb);
++	if (IS_ERR(skb))
++		rtl_dev_info(hdev, "read local version failed, continuing");
++	else {
++		rp = (struct hci_rp_read_local_version *)skb->data;
++		rtl_dev_info(hdev, "fw version 0x%04x%04x",
++			     __le16_to_cpu(rp->hci_rev),
++			     __le16_to_cpu(rp->lmp_subver));
++		kfree_skb(skb);
++	}
+ 
+ out:
+ 	kfree(dl_cmd);
+@@ -910,6 +947,16 @@
+ 		set_bit(HCI_QUIRK_BROKEN_LOCAL_EXT_FEATURES_PAGE_2,
+ 			&hdev->quirks);
+ 		break;
++	case RTL_ROM_LMP_8822B:
++		/* 8822BS (UART variant of 8822B) reports a page 2 of local
++		 * extended features that it does not actually support; the
++		 * controller answers with garbage or an error status.
++		 */
++		if (btrtl_dev->ic_info->hci_bus == HCI_UART &&
++		    btrtl_dev->ic_info->hci_ver == 0x7)
++			set_bit(HCI_QUIRK_BROKEN_LOCAL_EXT_FEATURES_PAGE_2,
++				&hdev->quirks);
++		break;
+ 	default:
+ 		break;
+ 	}
+@@ -1001,6 +1048,19 @@
+ 	int i, total_data_len;
+ 	bool found = false;
+ 
++	/* A controller that already runs the downloaded firmware reports the
++	 * patch version instead of the ROM one, so btrtl_initialize() finds no
++	 * id_table entry and loads neither firmware nor config. Keep the
++	 * existing line settings in that case.
++	 */
++	if (!btrtl_dev->ic_info) {
++		*device_baudrate = 0x0252c014;
++		*controller_baudrate = 115200;
++		*flow_control = false;
++		rtl_dev_info(hdev, "already patched, keeping 115200");
++		return 0;
++	}
++
+ 	total_data_len = btrtl_dev->cfg_len - sizeof(*config);
+ 	if (total_data_len <= 0) {
+ 		rtl_dev_warn(hdev, "no config loaded");
+@@ -1050,8 +1110,13 @@
+ 	}
+ 
+ 	if (!found) {
+-		rtl_dev_err(hdev, "no UART config entry found");
+-		return -ENOENT;
++		/* The stock RTL8822BS config carries no 0x0c entry; the vendor
++		 * driver then simply keeps the initial 115200 baudrate.
++		 */
++		*device_baudrate = 0x0252c014;
++		*controller_baudrate = 115200;
++		*flow_control = false;
++		rtl_dev_info(hdev, "no 0x0c entry, keeping 115200");
+ 	}
+ 
+ 	rtl_dev_dbg(hdev, "device baudrate = 0x%08x", *device_baudrate);

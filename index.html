@@ -9,18 +9,17 @@
 :root{
   --bg:#14161a; --fg:#eceae6; --muted:#9a948c;
   --accent-house:#2dd4bf; --accent-clock:#fb923c;
-  --accent-games:#a5b4fc; --accent-music:#1ed760;
+  --accent-music:#1ed760;
   --accent-robot:#f9a8d4;
 
-  /* Teclas 3D del menú: una sola geometría y una sola luz para las cinco. */
-  --key-w:604px;          /* ancho de la tecla */
-  --key-h:188px;          /* alto total, incluido el canto */
+  /* Teclas 3D del menú: una sola geometría y una sola luz para las cuatro. */
   --key-r:36px;           /* radio exterior */
   --key-side:5px;         /* canto visible a los lados */
   --key-depth:18px;       /* canto visible abajo */
   --key-press:11px;       /* recorrido al pulsar */
   --key-ink:#080b0f;      /* texto sobre la cara iluminada */
   --key-cast:rgba(2,4,7,.85);
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
@@ -75,13 +74,11 @@ header{
 }
 
 /* --- Tablero de teclas 3D sobre la rejilla fija del kiosco 1280x800.
-   Las cinco comparten geometría y luz; solo cambia el tono (--tint).
-   Rejilla de 604x188 con 48px de separación en ambos ejes: filas en
-   y=124, 360 y 596 (centros 218, 454 y 690); columnas en x=12 (centro
-   314) y x=664 (centro 966). La quinta ocupa el hueco inferior
-   izquierdo; el inferior derecho queda libre para el botón flotante
-   "Casa" del kiosco (1186-1262 x 706-782).
-   Centros clicables: (314,218) (966,218) (314,454) (966,454) (314,690). --- */
+  Las cuatro comparten geometría y luz; solo cambia el tono (--tint).
+  La rejilla ocupa todo el tablero: dos columnas y dos filas iguales que
+  se reparten 1280x800 menos el relleno (124px arriba por la cabecera,
+  12px a la izquierda) y la separación de 48px. Cada tecla queda en
+  610x314. Centros clicables: (317,281) (927,281) (317,643) (927,643). --- */
 main{
   position:fixed;
   left:0;
@@ -90,11 +87,11 @@ main{
   height:800px;
   z-index:1;
   display:grid;
-  grid-template-columns:var(--key-w) var(--key-w);
-  grid-template-rows:var(--key-h) var(--key-h) var(--key-h);
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr 1fr;
   column-gap:48px;
   row-gap:48px;
-  padding:124px 0 0 12px;
+  padding:124px 12px 12px 12px;
   pointer-events:none;
 }
 main::before{
@@ -108,15 +105,14 @@ main::before{
 .card{
   position:relative;
   pointer-events:auto;
-  width:var(--key-w);
-  height:var(--key-h);
+  width:100%;
+  height:100%;
   border-radius:var(--key-r);
   text-decoration:none;
   color:var(--key-ink);
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
-  outline:none;
-  /* Canto: pared de la tecla, misma caída de luz en las cinco. */
+  /* Canto: pared de la tecla, misma caída de luz en las cuatro. */
   background:linear-gradient(180deg,
     color-mix(in srgb,var(--tint) 46%,#0a0d12) 0%,
     color-mix(in srgb,var(--tint) 66%,#0b0e13) 58%,
@@ -210,18 +206,19 @@ main::before{
   text-shadow:0 1px 0 rgba(255,255,255,.4),0 -1px 0 rgba(0,0,0,.14);
 }
 
-/* "Robot de Limpieza" no cabe en una línea a 66px dentro de una tecla de
-   604px: se reparte en dos líneas a 54px, conservando peso y color. */
+/* "Robot de Limpieza" no cabe en una línea a 66px junto al icono dentro de
+   una tecla de 610px: se reparte en dos líneas a 54px, conservando peso y
+   color. El ancho fija dónde salta la línea, no el tamaño de la tecla. */
 .robot .label{
   font-size:54px;
   line-height:1.04;
-  width:250px;
+  width:260px;
   text-align:center;
 }
 
 .house{--tint:var(--accent-house)}
 .reloj{--tint:var(--accent-clock)}
-.juegos{--tint:var(--accent-games)}
+
 .musica{--tint:var(--accent-music)}
 .robot{--tint:var(--accent-robot)}
 </style>
@@ -260,19 +257,6 @@ main::before{
         <path d="M12 7.2V12l3.4 2.1"/>
       </svg>
       <span class="label">Reloj</span>
-    </span>
-  </a>
-
-  <a class="card juegos" href="games/index.html">
-    <span class="cap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M7.5 8h9a4.5 4.5 0 0 1 4.4 3.6l.9 4.5A2.9 2.9 0 0 1 19 19.3a2.9 2.9 0 0 1-2.4-1.3L15.4 16H8.6l-1.2 2A2.9 2.9 0 0 1 5 19.3a2.9 2.9 0 0 1-2.8-3.2l.9-4.5A4.5 4.5 0 0 1 7.5 8Z"/>
-        <path d="M7.4 11.6v2.2M6.3 12.7h2.2"/>
-        <circle cx="16.2" cy="12" r=".9"/>
-        <circle cx="17.8" cy="13.6" r=".9"/>
-      </svg>
-      <span class="label">Juegos</span>
     </span>
   </a>
 

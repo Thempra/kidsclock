@@ -7,11 +7,20 @@
 <title>Casa</title>
 <style>
 :root{
-  --bg:#14161a; --surface:#1d2127; --fg:#eceae6; --muted:#9a948c;
-  --border:#2c3138; --accent-house:#2dd4bf; --accent-clock:#fb923c;
-  --accent-games:#a5b4fc; --accent-music:#1ed760; --kid:#f59e0b;
-  --radius:24px;
-}
+  --bg:#14161a; --fg:#eceae6; --muted:#9a948c;
+  --accent-house:#2dd4bf; --accent-clock:#fb923c;
+  --accent-games:#a5b4fc; --accent-music:#1ed760;
+  --accent-robot:#f9a8d4;
+
+  /* Teclas 3D del menú: una sola geometría y una sola luz para las cinco. */
+  --key-w:604px;          /* ancho de la tecla */
+  --key-h:188px;          /* alto total, incluido el canto */
+  --key-r:36px;           /* radio exterior */
+  --key-side:5px;         /* canto visible a los lados */
+  --key-depth:18px;       /* canto visible abajo */
+  --key-press:11px;       /* recorrido al pulsar */
+  --key-ink:#080b0f;      /* texto sobre la cara iluminada */
+  --key-cast:rgba(2,4,7,.85);
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
@@ -26,6 +35,8 @@ body{
 }
 
 header{
+  position:relative;
+  z-index:2;
   display:flex;
   align-items:flex-end;
   justify-content:space-between;
@@ -63,100 +74,156 @@ header{
   text-transform:capitalize;
 }
 
+/* --- Tablero de teclas 3D sobre la rejilla fija del kiosco 1280x800.
+   Las cinco comparten geometría y luz; solo cambia el tono (--tint).
+   Rejilla de 604x188 con 48px de separación en ambos ejes: filas en
+   y=124, 360 y 596 (centros 218, 454 y 690); columnas en x=12 (centro
+   314) y x=664 (centro 966). La quinta ocupa el hueco inferior
+   izquierdo; el inferior derecho queda libre para el botón flotante
+   "Casa" del kiosco (1186-1262 x 706-782).
+   Centros clicables: (314,218) (966,218) (314,454) (966,454) (314,690). --- */
 main{
-  flex:1 1 auto;
+  position:fixed;
+  left:0;
+  top:0;
+  width:1280px;
+  height:800px;
+  z-index:1;
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  grid-template-rows:repeat(2,1fr);
-  gap:22px;
-  padding:22px 36px 32px;
-  min-height:0;
+  grid-template-columns:var(--key-w) var(--key-w);
+  grid-template-rows:var(--key-h) var(--key-h) var(--key-h);
+  column-gap:48px;
+  row-gap:48px;
+  padding:124px 0 0 12px;
+  pointer-events:none;
+}
+main::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(58% 60% at 46% 46%,rgba(255,255,255,.05),transparent 72%);
+  pointer-events:none;
 }
 
 .card{
   position:relative;
+  pointer-events:auto;
+  width:var(--key-w);
+  height:var(--key-h);
+  border-radius:var(--key-r);
+  text-decoration:none;
+  color:var(--key-ink);
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  outline:none;
+  /* Canto: pared de la tecla, misma caída de luz en las cinco. */
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--tint) 46%,#0a0d12) 0%,
+    color-mix(in srgb,var(--tint) 66%,#0b0e13) 58%,
+    color-mix(in srgb,var(--tint) 34%,#06080a) 100%);
+  box-shadow:
+    inset 2px 0 0 rgba(255,255,255,.13),
+    inset -2px 0 0 rgba(255,255,255,.09),
+    0 30px 46px -18px var(--key-cast),
+    0 12px 18px -8px rgba(0,0,0,.72),
+    0 2px 3px rgba(0,0,0,.5);
+  transition:box-shadow .08s ease;
+}
+
+/* Cara superior: la tecla propiamente dicha, iluminada desde arriba-izquierda. */
+.cap{
+  position:absolute;
+  inset:0 var(--key-side) var(--key-depth);
+  border-radius:calc(var(--key-r) - 5px);
   display:flex;
-  flex-direction:column;
   align-items:center;
   justify-content:center;
-  text-align:center;
-  padding:18px 24px 20px;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  text-decoration:none;
-  color:inherit;
-  transition:transform .15s ease,background .15s ease;
-  overflow:hidden;
-  min-height:0;
+  gap:22px;
+  padding:0 28px;
+  background:
+    radial-gradient(130% 150% at 14% -18%,rgba(255,255,255,.55),rgba(255,255,255,0) 56%),
+    linear-gradient(178deg,
+      color-mix(in srgb,var(--tint) 58%,#fff) 0%,
+      color-mix(in srgb,var(--tint) 88%,#fff) 42%,
+      color-mix(in srgb,var(--tint) 80%,#000) 100%);
+  box-shadow:
+    inset 0 3px 0 rgba(255,255,255,.9),
+    inset 3px 0 0 rgba(255,255,255,.42),
+    inset -3px 0 0 rgba(255,255,255,.26),
+    inset 0 -14px 22px -8px rgba(0,0,0,.34),
+    0 1px 0 rgba(0,0,0,.5);
+  transform:translateY(0);
+  transition:transform .08s ease,box-shadow .08s ease,filter .08s ease;
+  will-change:transform;
 }
-.card::before{
-  content:"";
-  position:absolute;
-  inset:0 0 auto 0;
-  height:5px;
-  background:var(--tint);
+
+/* Con puntero fino la tecla se eleva un poco más al acercarse; en táctil
+   no hay hover y el estado de reposo queda plano. */
+@media (hover:hover) and (pointer:fine){
+  .card:not(:active):hover .cap{transform:translateY(-3px)}
+  .card:not(:active):hover{
+    box-shadow:
+      inset 2px 0 0 rgba(255,255,255,.16),
+      inset -2px 0 0 rgba(255,255,255,.11),
+      0 36px 54px -18px var(--key-cast),
+      0 16px 22px -8px rgba(0,0,0,.72),
+      0 2px 3px rgba(0,0,0,.5);
+  }
+}
+
+/* Recorrido: el casquete baja dentro de su canto, la cara pierde altura y
+   la sombra proyectada se acorta. Así se siente el "clic" mecánico. */
+.card:active .cap{
+  transform:translateY(var(--key-press));
+  filter:brightness(.96) saturate(1.08);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.62),
+    inset 0 -8px 14px -6px rgba(0,0,0,.42);
 }
 .card:active{
-  transform:scale(.985);
-  background:#22272e;
+  box-shadow:
+    inset 2px 0 0 rgba(255,255,255,.1),
+    inset -2px 0 0 rgba(255,255,255,.07),
+    0 8px 12px -8px var(--key-cast),
+    0 3px 5px -1px rgba(0,0,0,.6);
+}
+.card:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--tint) 55%,#fff);
+  outline-offset:8px;
 }
 
-/* El icono manda: ocupa la mayor parte de la tarjeta y se reconoce de un
-   vistazo. Las letras quedan de apoyo, debajo y en tamaño contenido. */
-.icon{
-  width:164px;
-  height:164px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:color-mix(in srgb,var(--tint) 15%,var(--surface));
-  color:var(--tint);
+/* La etiqueta manda: enorme, oscura sobre la cara iluminada y legible
+   desde el otro lado de la habitación. El icono solo acompaña. */
+.cap svg{
+  width:96px;
+  height:96px;
   flex:0 0 auto;
+  opacity:.8;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.45));
 }
-.icon svg{width:100px;height:100px;display:block}
-
-.body{
-  padding-top:14px;
-}
-.body h2{
-  font-size:25px;
-  font-weight:600;
-  letter-spacing:-0.02em;
-  line-height:1.15;
-}
-.body p{
-  margin-top:5px;
-  font-size:14px;
-  line-height:1.35;
-  color:var(--muted);
+.cap .label{
+  font-size:66px;
+  font-weight:800;
+  letter-spacing:-0.035em;
+  line-height:1;
+  color:var(--key-ink);
+  text-shadow:0 1px 0 rgba(255,255,255,.4),0 -1px 0 rgba(0,0,0,.14);
 }
 
-.tag{
-  margin-top:10px;
-  padding:4px 12px;
-  border-radius:999px;
-  font-size:12.5px;
-  font-weight:550;
-  color:var(--tint);
-  background:color-mix(in srgb,var(--tint) 14%,var(--surface));
-  border:1px solid color-mix(in srgb,var(--tint) 32%,var(--surface));
+/* "Robot de Limpieza" no cabe en una línea a 66px dentro de una tecla de
+   604px: se reparte en dos líneas a 54px, conservando peso y color. */
+.robot .label{
+  font-size:54px;
+  line-height:1.04;
+  width:250px;
+  text-align:center;
 }
 
 .house{--tint:var(--accent-house)}
 .reloj{--tint:var(--accent-clock)}
 .juegos{--tint:var(--accent-games)}
 .musica{--tint:var(--accent-music)}
-
-@media (max-width:980px){
-  header{padding:24px}
-  main{grid-template-columns:1fr;grid-template-rows:none;gap:16px;padding:20px 24px 24px;overflow-y:auto}
-  .card{padding:24px}
-  .icon{width:110px;height:110px}
-  .icon svg{width:68px;height:68px}
-  .body h2{font-size:22px}
-}
+.robot{--tint:var(--accent-robot)}
 </style>
 </head>
 <body>
@@ -175,37 +242,29 @@ main{
 <main>
 
   <a class="card house" href="https://domotica.thempra.net/lovelace/home?kiosk">
-    <div class="icon">
+    <span class="cap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 10.6 12 3l9 7.6"/>
         <path d="M5.5 9.3V20a1 1 0 0 0 1 1h4v-6.2h3V21h4a1 1 0 0 0 1-1V9.3"/>
       </svg>
-    </div>
-    <div class="body">
-      <h2>Domótica</h2>
-      <p>Luces, clima y el estado de la casa.</p>
-    </div>
-    <span class="tag">Hogar</span>
+      <span class="label">Domótica</span>
+    </span>
   </a>
 
   <a class="card reloj" href="clock/index.html">
-    <div class="icon">
+    <span class="cap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/>
         <path d="M12 7.2V12l3.4 2.1"/>
       </svg>
-    </div>
-    <div class="body">
-      <h2>Reloj</h2>
-      <p>Qué toca ahora, con la esfera de actividades.</p>
-    </div>
-    <span class="tag">Familia</span>
+      <span class="label">Reloj</span>
+    </span>
   </a>
 
   <a class="card juegos" href="games/index.html">
-    <div class="icon">
+    <span class="cap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M7.5 8h9a4.5 4.5 0 0 1 4.4 3.6l.9 4.5A2.9 2.9 0 0 1 19 19.3a2.9 2.9 0 0 1-2.4-1.3L15.4 16H8.6l-1.2 2A2.9 2.9 0 0 1 5 19.3a2.9 2.9 0 0 1-2.8-3.2l.9-4.5A4.5 4.5 0 0 1 7.5 8Z"/>
@@ -213,16 +272,12 @@ main{
         <circle cx="16.2" cy="12" r=".9"/>
         <circle cx="17.8" cy="13.6" r=".9"/>
       </svg>
-    </div>
-    <div class="body">
-      <h2>Juegos</h2>
-      <p>Todavía estamos preparándolo.</p>
-    </div>
-    <span class="tag">Pequeños</span>
+      <span class="label">Juegos</span>
+    </span>
   </a>
 
   <a class="card musica" href="https://open.spotify.com/intl-es">
-    <div class="icon">
+    <span class="cap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/>
@@ -230,12 +285,20 @@ main{
         <path d="M8.2 12.6c2.4-.9 5.3-.7 7.5.6"/>
         <path d="M8.9 15.4c1.9-.7 4.1-.6 6 .5"/>
       </svg>
-    </div>
-    <div class="body">
-      <h2>Música</h2>
-      <p>Canciones y podcasts para la casa.</p>
-    </div>
-    <span class="tag">Para todos</span>
+      <span class="label">Música</span>
+    </span>
+  </a>
+
+  <a class="card robot" href="http://192.168.50.131/">
+    <span class="cap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.2 11.8h13.6a2.8 2.8 0 0 1 2.8 2.8v1.2a2.6 2.6 0 0 1-2.6 2.6H5a2.6 2.6 0 0 1-2.6-2.6v-1.2a2.8 2.8 0 0 1 2.8-2.8Z"/>
+        <path d="M9.2 11.8V10a2.8 2.8 0 0 1 5.6 0v1.8"/>
+        <path d="M15.6 14.9h2.1"/>
+      </svg>
+      <span class="label">Robot de Limpieza</span>
+    </span>
   </a>
 
 </main>
